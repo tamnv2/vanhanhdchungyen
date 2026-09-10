@@ -3,6 +3,11 @@ name: Deploy STABLE foundation
 on:
   push:
     branches: [stable]
+    paths:
+      - 'worker/**'
+      - 'gateway/**'
+      - 'scripts/**'
+      - '.github/workflows/deploy-stable.yml'
   workflow_dispatch:
 
 permissions:

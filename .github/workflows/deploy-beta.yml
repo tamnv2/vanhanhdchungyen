@@ -3,6 +3,11 @@ name: Deploy BETA foundation
 on:
   push:
     branches: [beta]
+    paths:
+      - 'worker/**'
+      - 'gateway/**'
+      - 'scripts/**'
+      - '.github/workflows/deploy-beta.yml'
   workflow_dispatch:
 
 permissions:
