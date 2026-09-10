@@ -1,0 +1,186 @@
+name: Verify environment configuration
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/verify-environments.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Verify ${{ matrix.environment }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - environment: beta
+            app_env: beta
+            public_host: beta.supra.cc.cd
+            lan_host: beta-lan.supra.cc.cd
+            drive_root: 1bzwazMX52pwrJtIF-uSft28w5tWrjsH8
+            gas_script_id: 19AUh_IYSBYomGZkVt-RQA45SHQV8KhLS5HtdWecTGGw27LLm1gZWNW6C
+            gas_deployment_id: AKfycbwD-mW4qwHVo11C6DnO5ipxID8u8mDcaYGwyZ5G0H2LlUYjTJ_kDgekGO6lJZ2S4LR9
+            gas_exec_url: https://script.google.com/macros/s/AKfycbwD-mW4qwHVo11C6DnO5ipxID8u8mDcaYGwyZ5G0H2LlUYjTJ_kDgekGO6lJZ2S4LR9/exec
+            signing_alias: vhdchy-beta
+            signing_sha256: 77:F1:80:45:03:DA:22:22:CE:92:58:58:95:1F:90:B6:12:AA:05:89:6B:53:DE:A0:CB:8F:FB:F0:7B:14:2A:16
+          - environment: stable
+            app_env: stable
+            public_host: supra.cc.cd
+            lan_host: lan.supra.cc.cd
+            drive_root: 1y9wiA0hV6BDgoKddDNsiJv3RbiWaYZWB
+            gas_script_id: 1g3iRXFrsPsp7SODtNgVs1NE6p3uJ0HjkRvqlnKrMc4oQ9tAem3S1oAnH
+            gas_deployment_id: AKfycbyZ4mlnOzFQzDArpsdeObm7o4JFQ_jJpvOCpBaqW1CrHDbIctYDx-8rxpSXuEGIxSFC
+            gas_exec_url: https://script.google.com/macros/s/AKfycbyZ4mlnOzFQzDArpsdeObm7o4JFQ_jJpvOCpBaqW1CrHDbIctYDx-8rxpSXuEGIxSFC/exec
+            signing_alias: vhdchy-stable
+            signing_sha256: 88:ED:44:66:EB:0E:4F:10:57:26:75:C4:8B:B9:86:30:F7:36:06:4C:5F:1A:95:04:5C:FB:C6:A4:AA:8B:42:C3
+    environment: ${{ matrix.environment }}
+    env:
+      APP_ENV: ${{ vars.APP_ENV }}
+      OWNER_EMAIL: ${{ vars.OWNER_EMAIL }}
+      CF_ACCOUNT_ID: ${{ vars.CF_ACCOUNT_ID }}
+      CF_ZONE_ID: ${{ vars.CF_ZONE_ID }}
+      CF_ZONE_NAME: ${{ vars.CF_ZONE_NAME }}
+      PUBLIC_HOST: ${{ vars.PUBLIC_HOST }}
+      LAN_HOST: ${{ vars.LAN_HOST }}
+      GAS_SCRIPT_ID: ${{ vars.GAS_SCRIPT_ID }}
+      GAS_DEPLOYMENT_ID: ${{ vars.GAS_DEPLOYMENT_ID }}
+      GAS_EXEC_URL: ${{ vars.GAS_EXEC_URL }}
+      GOOGLE_DRIVE_ENV_ROOT_ID: ${{ vars.GOOGLE_DRIVE_ENV_ROOT_ID }}
+      ANDROID_SIGNING_ALIAS: ${{ vars.ANDROID_SIGNING_ALIAS }}
+      ANDROID_SIGNING_SHA256: ${{ vars.ANDROID_SIGNING_SHA256 }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      GOOGLE_OAUTH_CLIENT_ID: ${{ secrets.GOOGLE_OAUTH_CLIENT_ID }}
+      GOOGLE_OAUTH_CLIENT_SECRET: ${{ secrets.GOOGLE_OAUTH_CLIENT_SECRET }}
+      GOOGLE_OAUTH_REFRESH_TOKEN: ${{ secrets.GOOGLE_OAUTH_REFRESH_TOKEN }}
+      ANDROID_SIGNING_KEY_B64: ${{ secrets.ANDROID_SIGNING_KEY_B64 }}
+      ANDROID_SIGNING_STORE_PASSWORD: ${{ secrets.ANDROID_SIGNING_STORE_PASSWORD }}
+      ANDROID_SIGNING_KEY_PASSWORD: ${{ secrets.ANDROID_SIGNING_KEY_PASSWORD }}
+
+    steps:
+      - name: Check variables and secret presence
+        shell: bash
+        env:
+          EXPECTED_APP_ENV: ${{ matrix.app_env }}
+          EXPECTED_PUBLIC_HOST: ${{ matrix.public_host }}
+          EXPECTED_LAN_HOST: ${{ matrix.lan_host }}
+          EXPECTED_DRIVE_ROOT: ${{ matrix.drive_root }}
+          EXPECTED_GAS_SCRIPT_ID: ${{ matrix.gas_script_id }}
+          EXPECTED_GAS_DEPLOYMENT_ID: ${{ matrix.gas_deployment_id }}
+          EXPECTED_GAS_EXEC_URL: ${{ matrix.gas_exec_url }}
+          EXPECTED_SIGNING_ALIAS: ${{ matrix.signing_alias }}
+          EXPECTED_SIGNING_SHA256: ${{ matrix.signing_sha256 }}
+        run: |
+          set -euo pipefail
+          check_eq() {
+            local name="$1" actual="$2" expected="$3"
+            if [[ "$actual" != "$expected" ]]; then
+              echo "$name mismatch" >&2
+              exit 1
+            fi
+          }
+          check_nonempty() {
+            local name="$1" value="$2"
+            if [[ -z "$value" ]]; then
+              echo "$name missing" >&2
+              exit 1
+            fi
+          }
+
+          check_eq APP_ENV "$APP_ENV" "$EXPECTED_APP_ENV"
+          check_eq OWNER_EMAIL "$OWNER_EMAIL" "vanhanhdchungyen@gmail.com"
+          check_eq CF_ACCOUNT_ID "$CF_ACCOUNT_ID" "1b1695e4f2a3abfe08dc475b352c7f42"
+          check_eq CF_ZONE_ID "$CF_ZONE_ID" "880b887071f771f5be3caf5726d5df11"
+          check_eq CF_ZONE_NAME "$CF_ZONE_NAME" "supra.cc.cd"
+          check_eq PUBLIC_HOST "$PUBLIC_HOST" "$EXPECTED_PUBLIC_HOST"
+          check_eq LAN_HOST "$LAN_HOST" "$EXPECTED_LAN_HOST"
+          check_eq GOOGLE_DRIVE_ENV_ROOT_ID "$GOOGLE_DRIVE_ENV_ROOT_ID" "$EXPECTED_DRIVE_ROOT"
+          check_eq GAS_SCRIPT_ID "$GAS_SCRIPT_ID" "$EXPECTED_GAS_SCRIPT_ID"
+          check_eq GAS_DEPLOYMENT_ID "$GAS_DEPLOYMENT_ID" "$EXPECTED_GAS_DEPLOYMENT_ID"
+          check_eq GAS_EXEC_URL "$GAS_EXEC_URL" "$EXPECTED_GAS_EXEC_URL"
+          check_eq ANDROID_SIGNING_ALIAS "$ANDROID_SIGNING_ALIAS" "$EXPECTED_SIGNING_ALIAS"
+          check_eq ANDROID_SIGNING_SHA256 "$ANDROID_SIGNING_SHA256" "$EXPECTED_SIGNING_SHA256"
+
+          check_nonempty CLOUDFLARE_API_TOKEN "$CLOUDFLARE_API_TOKEN"
+          check_nonempty GOOGLE_OAUTH_CLIENT_ID "$GOOGLE_OAUTH_CLIENT_ID"
+          check_nonempty GOOGLE_OAUTH_CLIENT_SECRET "$GOOGLE_OAUTH_CLIENT_SECRET"
+          check_nonempty GOOGLE_OAUTH_REFRESH_TOKEN "$GOOGLE_OAUTH_REFRESH_TOKEN"
+          check_nonempty ANDROID_SIGNING_KEY_B64 "$ANDROID_SIGNING_KEY_B64"
+          check_nonempty ANDROID_SIGNING_STORE_PASSWORD "$ANDROID_SIGNING_STORE_PASSWORD"
+          check_nonempty ANDROID_SIGNING_KEY_PASSWORD "$ANDROID_SIGNING_KEY_PASSWORD"
+
+      - name: Verify Cloudflare token access
+        shell: bash
+        run: |
+          set -euo pipefail
+          response=$(curl -fsS \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/d1/database?per_page=1")
+          jq -e '.success == true' <<<"$response" >/dev/null
+
+      - name: Verify Google OAuth, Apps Script and Drive access
+        shell: bash
+        run: |
+          set -euo pipefail
+          token_json=$(curl -fsS https://oauth2.googleapis.com/token \
+            -d client_id="$GOOGLE_OAUTH_CLIENT_ID" \
+            -d client_secret="$GOOGLE_OAUTH_CLIENT_SECRET" \
+            -d refresh_token="$GOOGLE_OAUTH_REFRESH_TOKEN" \
+            -d grant_type=refresh_token)
+          access_token=$(jq -r '.access_token // empty' <<<"$token_json")
+          [[ -n "$access_token" ]] || { echo 'Google OAuth refresh failed' >&2; exit 1; }
+
+          script_json=$(curl -fsS \
+            -H "Authorization: Bearer $access_token" \
+            "https://script.googleapis.com/v1/projects/$GAS_SCRIPT_ID/content")
+          jq -e '.files | length > 0' <<<"$script_json" >/dev/null
+
+          drive_json=$(curl -fsS \
+            -H "Authorization: Bearer $access_token" \
+            "https://www.googleapis.com/drive/v3/files/$GOOGLE_DRIVE_ENV_ROOT_ID?fields=id,name,mimeType")
+          jq -e --arg id "$GOOGLE_DRIVE_ENV_ROOT_ID" '.id == $id and .mimeType == "application/vnd.google-apps.folder"' <<<"$drive_json" >/dev/null
+
+      - name: Verify deployed Apps Script endpoint
+        shell: bash
+        env:
+          EXPECTED_ENV: ${{ matrix.app_env }}
+          EXPECTED_SCRIPT_ID: ${{ matrix.gas_script_id }}
+        run: |
+          set -euo pipefail
+          payload=$(curl -fsSL "$GAS_EXEC_URL")
+          jq -e --arg env "${EXPECTED_ENV^^}" --arg sid "$EXPECTED_SCRIPT_ID" \
+            '.ok == true and .environment == $env and .scriptId == $sid' <<<"$payload" >/dev/null
+
+      - name: Verify Android signing material
+        shell: bash
+        env:
+          EXPECTED_SIGNING_SHA256: ${{ matrix.signing_sha256 }}
+        run: |
+          set -euo pipefail
+          work=$(mktemp -d)
+          trap 'rm -rf "$work"' EXIT
+          printf '%s' "$ANDROID_SIGNING_KEY_B64" | base64 -d > "$work/signer.jks"
+
+          keytool_out=$(keytool -list -v \
+            -keystore "$work/signer.jks" \
+            -alias "$ANDROID_SIGNING_ALIAS" \
+            -storepass "$ANDROID_SIGNING_STORE_PASSWORD" 2>&1)
+          actual_sha=$(grep -m1 'SHA256:' <<<"$keytool_out" | sed 's/^[[:space:]]*SHA256:[[:space:]]*//')
+          [[ "$actual_sha" == "$EXPECTED_SIGNING_SHA256" ]] || { echo 'Signing SHA256 mismatch' >&2; exit 1; }
+
+          mkdir -p "$work/jar"
+          printf 'vhdchy signing verification\n' > "$work/jar/probe.txt"
+          (cd "$work/jar" && jar cf "$work/probe.jar" probe.txt)
+          jarsigner \
+            -keystore "$work/signer.jks" \
+            -storepass "$ANDROID_SIGNING_STORE_PASSWORD" \
+            -keypass "$ANDROID_SIGNING_KEY_PASSWORD" \
+            "$work/probe.jar" "$ANDROID_SIGNING_ALIAS" >/dev/null
+          jarsigner -verify "$work/probe.jar" >/dev/null
+
+      - name: Verification PASS
+        run: echo "Environment ${{ matrix.environment }} verification PASS"
