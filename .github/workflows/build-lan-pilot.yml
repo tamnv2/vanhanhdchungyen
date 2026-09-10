@@ -29,7 +29,8 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          dotnet publish lan-agent/Vhdchy.LanAgent/Vhdchy.LanAgent.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o out/agent
+          $version = "0.1.$env:GITHUB_RUN_NUMBER"
+          dotnet publish lan-agent/Vhdchy.LanAgent/Vhdchy.LanAgent.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:Version=$version -o out/agent
           dotnet publish lan-agent/Vhdchy.LanLoadGen/Vhdchy.LanLoadGen.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o out/loadgen
           New-Item -ItemType Directory -Force -Path out/package | Out-Null
           Copy-Item out/agent/* out/package/
@@ -40,9 +41,11 @@ jobs:
 
           1. Extract ZIP to a user-writable folder.
           2. Run VHDCHY.LanAgent.exe as normal user. Do NOT Run as administrator.
-          3. Double-click tray icon to open LAN dashboard.
-          4. No DNS/router/firewall change is required by the pilot.
-          5. If corporate policy/firewall blocks the EXE or inbound LAN, record the result; do not bypass company policy.
+          3. Hover the tray icon to view basic CPU/RAM/Disk/Network telemetry.
+          4. Double-click tray icon to open LAN dashboard; every metric has a short explanation.
+          5. Right-click tray → "Xuất log chẩn đoán..." after testing, then upload the ZIP to the VHDCHY ChatGPT session.
+          6. No DNS/router/firewall change is required by the pilot.
+          7. If corporate policy/firewall blocks the EXE or inbound LAN, record/export the result; do not bypass company policy.
           '@ | Set-Content -Encoding UTF8 out/package/README_FIRST.txt
           Compress-Archive -Path out/package/* -DestinationPath out/VHDCHY-LAN-Agent-BETA-win-x64.zip -Force
           (Get-FileHash out/VHDCHY-LAN-Agent-BETA-win-x64.zip -Algorithm SHA256).Hash.ToLower() + '  VHDCHY-LAN-Agent-BETA-win-x64.zip' | Set-Content -Encoding ascii out/VHDCHY-LAN-Agent-BETA-win-x64.sha256
@@ -120,4 +123,4 @@ jobs:
             --repo "$GITHUB_REPOSITORY" \
             --prerelease \
             --title "VHDCHY LAN Pilot BETA v0.1.${GITHUB_RUN_NUMBER}" \
-            --notes "BETA feasibility artifacts only. Windows Agent is portable user-mode/no-admin. Android APK is signed with the BETA signer. Do not use business/PII data in this pilot."
+            --notes "BETA feasibility artifacts only. New in this build: tray CPU/RAM/Disk/Network telemetry, plain-language metric explanations, and one-click diagnostic export on both Windows Agent and Android APK. Windows Agent remains portable user-mode/no-admin. Android APK is signed with the BETA signer. Do not use business/PII data in this pilot."
