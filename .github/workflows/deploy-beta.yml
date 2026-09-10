@@ -1,10 +1,16 @@
 name: Deploy BETA foundation
 
 on:
+  push:
+    branches: [beta]
   workflow_dispatch:
 
 permissions:
   contents: read
+
+concurrency:
+  group: deploy-beta
+  cancel-in-progress: false
 
 env:
   APP_ENV: ${{ vars.APP_ENV }}
@@ -14,6 +20,7 @@ env:
   PUBLIC_HOST: ${{ vars.PUBLIC_HOST }}
   GAS_SCRIPT_ID: ${{ vars.GAS_SCRIPT_ID }}
   GAS_DEPLOYMENT_ID: ${{ vars.GAS_DEPLOYMENT_ID }}
+  GAS_EXEC_URL: ${{ vars.GAS_EXEC_URL }}
   GOOGLE_DRIVE_ENV_ROOT_ID: ${{ vars.GOOGLE_DRIVE_ENV_ROOT_ID }}
   CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
   GOOGLE_OAUTH_CLIENT_ID: ${{ secrets.GOOGLE_OAUTH_CLIENT_ID }}
@@ -22,6 +29,7 @@ env:
 
 jobs:
   deploy:
+    if: ${{ github.ref_name == 'beta' }}
     environment: beta
     runs-on: ubuntu-latest
     steps:
