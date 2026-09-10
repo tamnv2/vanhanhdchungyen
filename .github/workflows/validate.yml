@@ -16,6 +16,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Validate shell
         run: bash -n scripts/*.sh
+      - name: Validate governance continuity
+        run: bash scripts/validate-governance.sh
       - name: Validate Apps Script manifest
         run: python3 -m json.tool gateway/appsscript.json >/dev/null
       - name: Check forbidden private material
