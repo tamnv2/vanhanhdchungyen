@@ -39,8 +39,32 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Deploy Google Gateway and Cloudflare in parallel
+      - name: Select changed components
+        id: changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            gas=true
+            cf=true
+          else
+            files=$(git diff --name-only HEAD^ HEAD)
+            gas=false
+            cf=false
+            if grep -Eq '^(gateway/|scripts/deploy-gas\.sh$)' <<<"$files"; then gas=true; fi
+            if grep -Eq '^(worker/|scripts/deploy-cloudflare\.sh$)' <<<"$files"; then cf=true; fi
+            if grep -Eq '^scripts/deploy-environment\.sh$|^\.github/workflows/deploy-beta\.yml$' <<<"$files"; then gas=true; cf=true; fi
+          fi
+          echo "gas=$gas" >> "$GITHUB_OUTPUT"
+          echo "cf=$cf" >> "$GITHUB_OUTPUT"
+          echo "Selected components: GAS=$gas Cloudflare=$cf"
+      - name: Deploy selected components
+        env:
+          DEPLOY_GAS: ${{ steps.changes.outputs.gas }}
+          DEPLOY_CLOUDFLARE: ${{ steps.changes.outputs.cf }}
         run: ./scripts/deploy-environment.sh
