@@ -50,15 +50,27 @@ jq -n \
     workers_dev:false,
     vars:{APP_ENV:$app_env,GAS_EXEC_URL:$gas_exec,BUILD_SHA:$build_sha},
     routes:[{pattern:$host,custom_domain:true}],
-    d1_databases:[{binding:"DB",database_name:$db_name,database_id:$db_id}]
+    d1_databases:[{
+      binding:"DB",
+      database_name:$db_name,
+      database_id:$db_id,
+      migrations_dir:"worker/migrations"
+    }]
   }' > "$config"
 
-CLOUDFLARE_API_TOKEN="$CLOUDFLARE_API_TOKEN" npx --yes wrangler@4 deploy --config "$config"
+# Apply schema changes before publishing code that depends on them.
+# Wrangler CI mode skips the interactive confirmation and D1 captures a backup.
+CLOUDFLARE_API_TOKEN="$CLOUDFLARE_API_TOKEN" \
+  npx --yes wrangler@4 d1 migrations apply "$db_name" --remote --config "$config"
+
+CLOUDFLARE_API_TOKEN="$CLOUDFLARE_API_TOKEN" \
+  npx --yes wrangler@4 deploy --config "$config"
 
 for i in $(seq 1 24); do
   payload=$(curl -fsS "https://$PUBLIC_HOST/health/deep" 2>/dev/null || true)
-  if [[ -n "$payload" ]] && jq -e --arg env "$APP_ENV" '.ok == true and .service == "VHDCHY_WORKER" and .environment == $env and .d1.ok == true and .googleGateway.ok == true' <<<"$payload" >/dev/null 2>&1; then
+  if [[ -n "$payload" ]] && jq -e --arg env "$APP_ENV" '.ok == true and .service == "VHDCHY_WORKER" and .environment == $env and .d1.ok == true and .d1.schemaVersion == "business_core_v1" and .googleGateway.ok == true' <<<"$payload" >/dev/null 2>&1; then
     echo "Cloudflare deep health PASS: $PUBLIC_HOST"
+    echo "D1 business core schema PASS: business_core_v1"
     echo "D1 database id: $db_id"
     exit 0
   fi

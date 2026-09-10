@@ -36,3 +36,31 @@ GitHub lưu bootstrap/current-state/decisions/task-ledger/changelog để AI đ�
 ## D-009 — Changelog append-only
 
 Mỗi thay đổi version/release phải thêm entry mới; không sửa/xóa lịch sử để làm sạch bề ngoài.
+
+## D-010 — DC Core + cluster rollout
+
+Nền tảng phục vụ toàn DC; cluster là operational boundary có `cluster_id`, không hard-code một cluster thành toàn bộ nghiệp vụ. Pick Pack 1291 là cluster BETA đầu tiên để build/test/stress/soak trước khi promote STABLE.
+
+## D-011 — Legacy Pick Pack chỉ là strong reference
+
+Được đọc/reuse có chọn lọc logic/schema/UI/test từ Pick Pack 1291 cũ. Không write/deploy/runtime fallback sang tài nguyên cũ và không migrate employee/resource/history cũ vì dữ liệu đó là test.
+
+## D-012 — Immutable event + correction
+
+Canonical mutation phải có immutable event, idempotency, entity version và device sequence khi áp dụng. Raw event không UPDATE/DELETE; correction/tombstone/reversal là event mới và conflict phải lưu evidence + resolver decision.
+
+## D-013 — Google Sheets projection only
+
+Sheets là human-readable projection/archive/đối soát, không phải business authority. Projection dùng D1 outbox + batch one-writer; app/web/PDA không ghi trực tiếp nhiều tab.
+
+## D-014 — Free-first
+
+Tối ưu request/CPU/D1/Drive/Sheets trước khi Paid. Không polling liên tục; dùng indexed query, delta, batch và archive verified. Free capacity được quyết định bằng stress/soak thực tế.
+
+## D-015 — Beta/Stable runtime isolation
+
+BETA/STABLE tách D1/Worker/GAS/OAuth/Drive/signing/runtime state. Promotion là source/schema/config đã duyệt, không copy wholesale runtime data.
+
+## D-016 — Không public business data trước auth
+
+Repo và Worker public không đồng nghĩa dữ liệu nghiệp vụ public. Trước khi session/permission layer hoàn tất, chỉ health/meta/capabilities được anonymous; data/admin routes bị đóng và anonymous mutation bị cấm.
