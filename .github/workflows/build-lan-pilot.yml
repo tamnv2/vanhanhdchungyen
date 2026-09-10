@@ -62,7 +62,7 @@ jobs:
       ANDROID_SIGNING_STORE_PASSWORD: ${{ secrets.ANDROID_SIGNING_STORE_PASSWORD }}
       ANDROID_SIGNING_KEY_PASSWORD: ${{ secrets.ANDROID_SIGNING_KEY_PASSWORD }}
       ANDROID_SIGNING_KEY_B64: ${{ secrets.ANDROID_SIGNING_KEY_B64 }}
-      ANDROID_SIGNING_STORE_FILE: ${{ runner.temp }}/vhdchy-beta.jks
+      ANDROID_SIGNING_STORE_FILE: /tmp/vhdchy-beta.jks
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
