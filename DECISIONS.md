@@ -64,3 +64,7 @@ BETA/STABLE tách D1/Worker/GAS/OAuth/Drive/signing/runtime state. Promotion là
 ## D-016 — Không public business data trước auth
 
 Repo và Worker public không đồng nghĩa dữ liệu nghiệp vụ public. Trước khi session/permission layer hoàn tất, chỉ health/meta/capabilities được anonymous; data/admin routes bị đóng và anonymous mutation bị cấm.
+
+## D-017 — Projection integration không chặn canonical core
+
+D1 là authority và mutation phải commit được độc lập với availability tức thời của Google. Google Sheets/Gateway là async projection/archive; lỗi integration được báo `degraded` và xử lý bằng outbox/retry/ack/checkpoint, không biến thành lỗi canonical write. Direct Worker→GAS chỉ là probe/transport candidate, không phải dependency critical cho health hoặc transaction.

@@ -55,9 +55,16 @@ async function checkGoogleGateway(env) {
   try {
     const response = await fetch(env.GAS_EXEC_URL, {
       redirect: "follow",
-      cf: { cacheTtl: 0, cacheEverything: false }
+      cache: "no-store"
     });
-    if (!response.ok) return { ok: false, error: "GATEWAY_HTTP_ERROR", status: response.status };
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: "GATEWAY_HTTP_ERROR",
+        status: response.status,
+        critical: false
+      };
+    }
 
     const payload = await response.json();
     const expected = String(env.APP_ENV || "").toUpperCase();
@@ -65,9 +72,11 @@ async function checkGoogleGateway(env) {
       payload?.service === "VHDCHY_GOOGLE_GATEWAY" &&
       payload?.environment === expected;
 
-    return ok ? { ok: true } : { ok: false, error: "GATEWAY_IDENTITY_MISMATCH" };
+    return ok
+      ? { ok: true, critical: false }
+      : { ok: false, error: "GATEWAY_IDENTITY_MISMATCH", critical: false };
   } catch {
-    return { ok: false, error: "GATEWAY_UNAVAILABLE" };
+    return { ok: false, error: "GATEWAY_UNAVAILABLE", critical: false };
   }
 }
 
@@ -81,6 +90,7 @@ function publicCapabilities() {
     correctionModel: "NEW_EVENT_NO_RAW_REWRITE",
     googleSheetsRole: "PROJECTION_ONLY",
     projectionTransport: "D1_OUTBOX_BATCH",
+    projectionAvailabilityModel: "ASYNC_NON_BLOCKING",
     domains: [
       "clusters",
       "shift_definitions",
@@ -118,15 +128,31 @@ export default {
         checkD1(env),
         checkGoogleGateway(env)
       ]);
-      const ok = d1.ok && googleGateway.ok;
+
+      // D1 is canonical business authority. Google is an asynchronous projection/archive
+      // integration, so temporary Google/GAS unavailability must not make the core write
+      // path unhealthy. Outbox/ack/checkpoint handles delayed projection separately.
+      const ok = d1.ok;
+      const degraded = !googleGateway.ok;
       return json({
         ok,
+        degraded,
         service: "VHDCHY_WORKER",
         environment: env.APP_ENV || "unknown",
         build: env.BUILD_SHA || "unknown",
         d1,
         googleGateway
       }, ok ? 200 : 503, requestId);
+    }
+
+    if (url.pathname === "/health/integrations" && request.method === "GET") {
+      const googleGateway = await checkGoogleGateway(env);
+      return json({
+        ok: googleGateway.ok,
+        service: "VHDCHY_WORKER",
+        environment: env.APP_ENV || "unknown",
+        googleGateway
+      }, googleGateway.ok ? 200 : 207, requestId);
     }
 
     if (url.pathname === "/api/v1/meta" && request.method === "GET") {
