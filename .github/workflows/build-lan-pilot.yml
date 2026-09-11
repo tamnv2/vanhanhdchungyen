@@ -28,6 +28,15 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
+      - name: Validate V4 updater source invariants
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $source = Get-Content lan-agent/Vhdchy.LanAgent/PilotV4.cs -Raw
+          if (-not $source.Contains('if not errorlevel 1 goto success')) { throw 'Updater health success branch is missing.' }
+          if ($source.Contains('%HEALTH_OK%')) { throw 'Updater contains stale batch percent-expansion health state.' }
+          if (-not $source.Contains('SHA256.HashData(zip)')) { throw 'Agent ZIP SHA256 verification is missing.' }
+          if (-not $source.Contains('goto rollback')) { throw 'Updater rollback branch is missing.' }
       - name: Publish portable user-mode LAN Agent
         shell: pwsh
         run: |
