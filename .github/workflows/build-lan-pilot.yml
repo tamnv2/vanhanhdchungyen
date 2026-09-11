@@ -84,6 +84,15 @@ jobs:
       ANDROID_SIGNING_STORE_FILE: /tmp/vhdchy-beta.jks
     steps:
       - uses: actions/checkout@v4
+      - name: Validate V4 background lifecycle source invariants
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -F 'if (ACTIVE_JOBS.get() > 0 || repo.countPending() > 0) startFinishService();' android-pilot/app/src/main/java/vn/vhdchy/lanpilot/MainActivityV4.java
+          grep -F 'if (destroyed && left == 0)' android-pilot/app/src/main/java/vn/vhdchy/lanpilot/MainActivityV4.java
+          grep -F 'io.shutdown();' android-pilot/app/src/main/java/vn/vhdchy/lanpilot/MainActivityV4.java
+          grep -F 'START_NOT_STICKY' android-pilot/app/src/main/java/vn/vhdchy/lanpilot/LanFinishService.java
+          grep -F 'wakeLock.acquire(20 * 60 * 1000L)' android-pilot/app/src/main/java/vn/vhdchy/lanpilot/LanFinishService.java
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
