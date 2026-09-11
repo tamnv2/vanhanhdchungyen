@@ -92,7 +92,7 @@ jobs:
           grep -F 'if (destroyed && left == 0)' android-pilot/app/src/main/java/vn/vhdchy/lanpilot/MainActivityV4.java
           grep -F 'io.shutdown();' android-pilot/app/src/main/java/vn/vhdchy/lanpilot/MainActivityV4.java
           grep -F 'START_NOT_STICKY' android-pilot/app/src/main/java/vn/vhdchy/lanpilot/LanFinishService.java
-          grep -F 'wakeLock.acquire(20 * 60 * 1000L)' android-pilot/app/src/main/java/vn/vhdchy/lanpilot/LanFinishService.java
+          grep -F 'wakeLock.acquire(20L * 60_000L)' android-pilot/app/src/main/java/vn/vhdchy/lanpilot/LanFinishService.java
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
