@@ -1,0 +1,40 @@
+name: One-time LAN V4 Android finish cleanup repair
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/fix-lan-v4-android-finish-cleanup.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Release Activity resources after final background job and self-remove
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path('android-pilot/app/src/main/java/vn/vhdchy/lanpilot/MainActivityV4.java')
+          s = p.read_text(encoding='utf-8')
+          old = '''                int left = ACTIVE_JOBS.decrementAndGet();\n                repo.log("JOB_END", "name=" + name + "; elapsedMs=" + (SystemClock.elapsedRealtime() - start) + "; activeJobs=" + left + "; pending=" + repo.countPending());\n                updateBackgroundUi();'''
+          new = '''                int left = ACTIVE_JOBS.decrementAndGet();\n                repo.log("JOB_END", "name=" + name + "; elapsedMs=" + (SystemClock.elapsedRealtime() - start) + "; activeJobs=" + left + "; pending=" + repo.countPending());\n                if (!destroyed) updateBackgroundUi();\n                if (destroyed && left == 0) {\n                    repo.log("BACKGROUND_IDLE", "activity destroyed; final tracked job complete; releasing activity executor/database");\n                    io.shutdown();\n                    repo.close();\n                }'''
+          n = s.count(old)
+          if n != 1:
+              raise SystemExit(f'expected exactly one runTracked cleanup block, found {n}')
+          p.write_text(s.replace(old, new), encoding='utf-8', newline='\n')
+          Path('.github/workflows/fix-lan-v4-android-finish-cleanup.yml').unlink()
+      - name: Commit permanent repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --check
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add android-pilot/app/src/main/java/vn/vhdchy/lanpilot/MainActivityV4.java .github/workflows/fix-lan-v4-android-finish-cleanup.yml
+          git commit -m 'fix(android): release V4 activity resources after final background job'
+          git push origin HEAD:main
